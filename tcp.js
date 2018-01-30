@@ -22,8 +22,8 @@ function onClientConnected(socket) {
   console.log(`${clientName} connected.`);
   socket.on('data', (data) => {
     let m = data.toString().replace(/[\n\r]*$/, '');
-	  var d = {msg:{info:m}};
-	  insertData(d);
+    var d = {msg:{info:m}};
+    insertData(d);
     console.log(`${clientName} said: ${m}`);
     socket.write(`We got your message (${m}). Thanks!\n`);
   });
