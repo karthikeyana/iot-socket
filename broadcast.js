@@ -18,18 +18,21 @@ function onClientConnected(socket) {
 console.log(`Server started at: ${ADDRESS}:${PORT}`);
 
 function onClientConnected(socket) {
-
   socket.name = `${socket.remoteAddress}:${socket.remotePort}`;
   clients.push(socket);
   console.log(`${socket.name} connected.`);
   socket.on('data', (data) => {
-    var d = typeCheck(data);
-    //let m = data.toString().replace(/[\n\r]*$/, '');
-    //var d = {msg:{info:m}};
-	  insertData(d);
-    console.log(`${socket.name} said: ${m}`);
-    broadcast(socket.name + "> " + data, socket);
-    socket.write(`We got your message (${m}). Thanks!\n`);
+    var m = data.toString().replace(/[\n\r]*$/, '');
+    var l = typeCheck(m);
+    if(typeof l === 'object' && typeof l !== 'string'){
+      socket.data = { msg: l };
+      insertData(socket);
+    } else {
+      console.log(`${socket.name} : ${l} + "check the data"`);
+      broadcast(socket.name + "> " + l + "check the data", socket);
+      socket.write(`${l}. check the data!\n`);
+    }
+
   });
 
   socket.on('end', () => {
@@ -42,31 +45,31 @@ function onClientConnected(socket) {
 /*format String*/
 function parser116(s){
   var p = {
-    "$$": s.slice(0,2),
-    "Length": s.slice(2,6),
-    "DataType":s.slice(6,8),
-    "IMEI": s.slice(8,23),
-    "VehicleStatus":s.slice(24,32),
-    "Date/Time": dateTime(s.slice(32,44)),
-    "BatteryVoltage":convertBV(s.slice(44,46)),
-    "SupplyVoltage":convertSV(s.slice(46,48)),
+    "header": s.slice(0,2),
+    "length": s.slice(2,6),
+    "alaramCode":s.slice(6,8),
+    "deviceId": s.slice(8,23),
+    "vehicleStatus":s.slice(24,32),
+    "dateTime": dateTime(s.slice(32,44)),
+    "batteryVoltage":convertBV(s.slice(44,46)),
+    "supplyVoltage":convertSV(s.slice(46,48)),
     "ADC":convertADC(s.slice(48,52)),
-    "TemperatureA":s.slice(52,56),
-    "TemperatureB":s.slice(56,60),
+    "temperatureA":s.slice(52,56),
+    "temperatureB":s.slice(56,60),
     "LACCI":s.slice(60,64),
-    "CellID":s.slice(64,68),
+    "cellID":s.slice(64,68),
     "GPSSatellites":s.slice(68,70),
     "GSMsignal":s.slice(70,72),
-    "Angle":s.slice(72,75),
-    "Speed":s.slice(75,78),
+    "angle":s.slice(72,75),
+    "speed":s.slice(75,78),
     "HDOP":s.slice(78,82),
-    "Mileage":s.slice(82,89),
-    "Latitude":s.slice(89,98),
+    "mileage":s.slice(82,89),
+    "latitude":s.slice(89,98),
     "NS":s.slice(98,99),
-    "Longitude":s.slice(99,109),
+    "longitude":s.slice(99,109),
     "EW":s.slice(109,110),
-    "SerialNumber":s.slice(110,114),
-    "Checksum":s.slice(114,116)
+    "serialNumber":s.slice(110,114),
+    "checksum":s.slice(114,116)
   }
   return p;
 }
@@ -96,15 +99,17 @@ function typeCheck(str){
 }
 /**************/
 
-function insertData(data){
-  console.log(data,'data');
-		MongoClient.connect(url, function(err, db){
-		console.log(data);
-		db.collection('gprs').save(data.msg , (err,result)=>{
+function insertData(socket){
+  MongoClient.connect(url, function(err, db){
+		db.collection('gprs').insert(socket.data.msg , (err,result)=>{
 			if(err){
-				console.log("not inserted");
+        console.log(`${socket.name} error message is : ${err}`);
+        broadcast(socket.name + "> " + err, socket);
+        socket.write(`error message is (${err}). Thanks!\n`);
 			}else {
-				console.log("inserted");
+        console.log(`${socket.name} said: ${JSON.stringify(result.ops[0])}`);
+        broadcast(socket.name + "> " + JSON.stringify(result.ops[0]), socket);
+        socket.write(`We got message (${JSON.stringify(result.ops[0])}). Thanks!\n`);
 			}
 		});
 	});

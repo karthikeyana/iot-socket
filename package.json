@@ -1,0 +1,16 @@
+{
+  "name": "iot-socket",
+  "version": "1.0.0",
+  "description": "",
+  "main": "broadcast.js",
+  "scripts": {
+    "start":"node broadcast.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "net":"*",
+    "mongodb": "^2.2.33"
+  }
+}
