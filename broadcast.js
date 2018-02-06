@@ -49,7 +49,7 @@ function parser116(s){
     "VehicleStatus":s.slice(24,32),
     "Date/Time": dateTime(s.slice(32,44)),
     "BatteryVoltage":convertBV(s.slice(44,46)),
-    "SupplyVoltage":s.slice(46,48),
+    "SupplyVoltage":convertSV(s.slice(46,48)),
     "ADC":convertADC(s.slice(48,52)),
     "TemperatureA":s.slice(52,56),
     "TemperatureB":s.slice(56,60),
