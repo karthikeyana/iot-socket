@@ -4,7 +4,7 @@ const net = require('net');
 const MongoClient= require('mongodb').MongoClient;
 const PORT = 3030;
 const ADDRESS = '0.0.0.0';
-const url = 'mongodb://localhost:27017/gprs';
+const url = 'mongodb://localhost:27017/iot_server_app';
 const clients = [];
 
 let server = net.createServer(onClientConnected);
@@ -28,8 +28,8 @@ function onClientConnected(socket) {
       socket.data = { msg: l };
       insertData(socket);
     } else {
-      console.log(`${socket.name} : ${l} + "check the data"`);
-      broadcast(socket.name + "> " + l + "check the data", socket);
+      console.log(`${socket.name} : ${l} "check the data"`);
+      broadcast(socket.name + "> " + l + " check the data", socket);
       socket.write(`${l}. check the data!\n`);
     }
 
@@ -101,17 +101,38 @@ function typeCheck(str){
 
 function insertData(socket){
   MongoClient.connect(url, function(err, db){
-		db.collection('gprs').insert(socket.data.msg , (err,result)=>{
-			if(err){
-        console.log(`${socket.name} error message is : ${err}`);
-        broadcast(socket.name + "> " + err, socket);
-        socket.write(`error message is (${err}). Thanks!\n`);
-			}else {
-        console.log(`${socket.name} said: ${JSON.stringify(result.ops[0])}`);
-        broadcast(socket.name + "> " + JSON.stringify(result.ops[0]), socket);
-        socket.write(`We got message (${JSON.stringify(result.ops[0])}). Thanks!\n`);
-			}
-		});
+    var find = {deviceId:socket.data.msg.deviceId}
+    console.log(find,'find');
+    db.collection('deviceTracker').findOne(find, (err,result)=>{
+      if(!result){
+        var insert = {deviceId: socket.data.msg.deviceId, history: [socket.data.msg]};
+        db.collection('deviceTracker').insert(insert, (err,result)=>{
+    			if(err){
+            console.log(`${socket.name} error message is : ${err}`);
+            broadcast(socket.name + "> " + err, socket);
+            socket.write(`error message is (${err}). Thanks!\n`);
+    			}else {
+            console.log(`${socket.name} said: ${JSON.stringify(result.ops[0])}`);
+            broadcast(socket.name + "> " + JSON.stringify(result.ops[0]), socket);
+            socket.write(`We got message (${JSON.stringify(result.ops[0])}). Thanks!\n`);
+    			}
+    		});
+      } else {
+        var update = {select: {deviceId: socket.data.msg.deviceId}, data:{$push:{history: socket.data.msg}}};
+        db.collection('deviceTracker').findOneAndUpdate(update.select, update.data, (err,result)=>{
+    			if(err){
+            console.log(`${socket.name} error message is : ${err}`);
+            broadcast(socket.name + "> " + err, socket);
+            socket.write(`error message is (${err}). Thanks!\n`);
+    			}else {
+            var res = JSON.stringify(result.value.history[result.value.history.length-1]);
+            console.log(`${socket.name} said: ${res}`);
+            broadcast(socket.name + "> " + res, socket);
+            socket.write(`We got message (${res}). Thanks!\n`);
+    			}
+    		});
+      }
+    });
 	});
 }
 
